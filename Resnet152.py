@@ -292,16 +292,19 @@ def ResNet152(include_top=True, weights=None,
         x = AveragePooling2D((14, 14), name='avg_pool')(x)
     else:
         x = AveragePooling2D((7, 7), name='avg_pool')(x)
+        print(x.shape)
+
     
     # include classification layer by default, not included for feature extraction 
-    if include_top:
-        x = Flatten()(x)
-        x = Dense(classes, activation='softmax', name='fc1000')(x)
-    else:
-        if pooling == 'avg':
-            x = GlobalAveragePooling2D()(x)
-        elif pooling == 'max':
-            x = GlobalMaxPooling2D()(x)
+    #if include_top:
+       # x = Flatten()(x)
+       # x = Dense(classes, activation='softmax', name='fc1000')(x)
+        #print(x.shape)
+   # else:
+       # if pooling == 'avg':
+        #    x = GlobalAveragePooling2D()(x)
+       # elif pooling == 'max':
+        #    x = GlobalMaxPooling2D()(x)
     
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
@@ -342,6 +345,7 @@ def ResNet152(include_top=True, weights=None,
                           '`image_data_format="channels_last"` in '
                           'your Keras config '
                           'at ~/.keras/keras.json.')
+    #print(model.output_shape)
     return model
 
 if __name__ == '__main__':
@@ -355,4 +359,7 @@ if __name__ == '__main__':
     print('Input image shape:', x.shape)
 
     preds = model.predict(x)
-    print('Predicted:', decode_predictions(preds))
+    #print(preds[0])
+    preds = np.reshape(preds[0],(2048,));
+    print(preds)
+    #print('Predicted:', decode_predictions(preds))
