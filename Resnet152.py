@@ -12,7 +12,7 @@ from keras.layers import ZeroPadding2D
 from keras.layers import AveragePooling2D
 from keras.layers import GlobalAveragePooling2D
 from keras.layers import BatchNormalization
-from keras.layers import add
+from keras.layers import add, Lambda
 from keras.models import Model
 import keras.backend as K
 from keras.engine.topology import get_source_inputs
@@ -29,7 +29,7 @@ import sys
 sys.setrecursionlimit(3000)
 
 WEIGHTS_PATH = 'https://github.com/adamcasson/resnet152/releases/download/v0.1/resnet152_weights_tf.h5'
-WEIGHTS_PATH_NO_TOP = 'https://github.com/adamcasson/resnet152/releases/download/v0.1/resnet152_weights_tf_notop.h5'
+WEIGHTS_PATH_NO_TOP = 'resnet152_weights_tf_notop.h5'
 
 class Scale(Layer):
     """Custom Layer for ResNet used for BatchNormalization.
@@ -249,7 +249,7 @@ def ResNet152(include_top=True, weights=None,
                                       default_size=img_size,
                                       min_size=197,
                                       data_format=K.image_data_format(),
-                                      require_flatten=include_top)
+                                      include_top=include_top)
     
     if input_tensor is None:
         img_input = Input(shape=input_shape)
@@ -292,20 +292,19 @@ def ResNet152(include_top=True, weights=None,
         x = AveragePooling2D((14, 14), name='avg_pool')(x)
     else:
         x = AveragePooling2D((7, 7), name='avg_pool')(x)
-        print(x.shape)
-
+        
     
     # include classification layer by default, not included for feature extraction 
-    #if include_top:
-       # x = Flatten()(x)
-       # x = Dense(classes, activation='softmax', name='fc1000')(x)
-        #print(x.shape)
-   # else:
-       # if pooling == 'avg':
-        #    x = GlobalAveragePooling2D()(x)
-       # elif pooling == 'max':
-        #    x = GlobalMaxPooling2D()(x)
-    
+    if include_top:
+        x = Flatten()(x)
+        x = Dense(classes, activation='softmax', name='fc1000')(x)
+        print(x.shape)
+    else:
+        if pooling == 'avg':
+            x = GlobalAveragePooling2D()(x)
+        elif pooling == 'max':
+            x = GlobalMaxPooling2D()(x)
+    x = Lambda(lambda x: x[0,0,:,:])(x)
     # Ensure that the model takes into account
     # any potential predecessors of `input_tensor`.
     if input_tensor is not None:
@@ -323,10 +322,11 @@ def ResNet152(include_top=True, weights=None,
                                     cache_subdir='models',
                                     md5_hash='cdb18a2158b88e392c0905d47dcef965')
         else:
-            weights_path = get_file('resnet152_weights_tf_notop.h5',
-                                    WEIGHTS_PATH_NO_TOP,
-                                    cache_subdir='models',
-                                    md5_hash='4a90dcdafacbd17d772af1fb44fc2660')
+            weights_path = 'resnet152_weights_tf_notop.h5'
+            #weights_path = get_file('resnet152_weights_tf_notop.h5',
+           #                         WEIGHTS_PATH_NO_TOP,
+             #                       cache_subdir='models',
+              #                      md5_hash='4a90dcdafacbd17d772af1fb44fc2660')
         model.load_weights(weights_path, by_name=True)
         if K.backend() == 'theano':
             layer_utils.convert_all_kernels_in_model(model)
@@ -349,7 +349,7 @@ def ResNet152(include_top=True, weights=None,
     return model
 
 if __name__ == '__main__':
-    model = ResNet152(include_top=True, weights='imagenet')
+    model = ResNet152(include_top=False, weights='imagenet')
     
     img_path = 'cat.jpg'
     img = image.load_img(img_path, target_size=(224,224))
