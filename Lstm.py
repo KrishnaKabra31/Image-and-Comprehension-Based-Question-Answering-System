@@ -1,22 +1,29 @@
 from keras.models import Sequential,Model
-from keras.layers import Dense,Dot,Lambda,Input, Activation,Merge,RepeatVector,Concatenate,Dropout,Reshape
+from keras.layers import Dense,Dot,Lambda,Input, Activation,Merge,RepeatVector,Concatenate,Dropout,Reshape, Embedding
 from keras.layers import LSTM
 from keras import backend as tf
-def Lstm(word_feature_size = 300,number_of_hidden_units = 1024,que_length = 26):#,num_words,embedding_dim):
-  #  left = Sequential()
-    inputs = Input(shape = (26,300))
-    left = LSTM(1024, input_shape = (que_length,word_feature_size),return_sequences=True)(inputs)
+import os, h5py, json
+import numpy as np
+
+"""
+Lstm architecture used for model
+""""
+
+def Lstm(num_words , embedding_dim, word_feature_size = 300,number_of_hidden_units = 1024,que_length = 26):
+    inputs = Input(shape = (26,))
+    if os.path.exists('embeddings_300.h5'):
+        with h5py.File('embeddings_300.h5') as f:
+            embedding_matrix = np.array(f['embedding_matrix'])
+    inpu = Embedding(num_words, embedding_dim, 
+        weights=[embedding_matrix], input_length=que_length, trainable=False)(inputs)
+    left = LSTM(1024, input_shape = (que_length,word_feature_size),return_sequences=True)(inpu)
     p = Lambda(lambda x:x[:,-1,:])(left)
     left = (Dropout(rate=0.4))(left)
-    print(p)
     left = LSTM(1024,return_sequences=False)(left)
     left = Lambda(lambda x:x[:,:])(left)
     left = Dropout(rate = 0.4)(left)
-    print(left)
     con = Concatenate(axis = 1)([p,left])
     model = Model(input= inputs, output=con)
-    print(model.output_shape)
-    return con
-m = Lstm()
-#print(l)
-#print(m.outputs)
+    return model
+if __name__ == "__main__":
+	Lstm()
